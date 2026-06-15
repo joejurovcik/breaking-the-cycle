@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Breaking the Cycle</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;500&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root { --night: #0f0f0f; --ember: #c4622d; --gold: #e8a838; --cream: #f5efe6; --mist: #b0a898; --leaf: #4a7c59; }
+  body { background: var(--night); color: var(--cream); font-family: 'Inter', sans-serif; font-weight: 300; min-height: 100vh; line-height: 1.7; }
+  #intro { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 24px; text-align: center; position: relative; overflow: hidden; }
+  #intro::before { content: ''; position: absolute; top: -200px; left: 50%; transform: translateX(-50%); width: 600px; height: 600px; background: radial-gradient(circle, rgba(196,98,45,0.15) 0%, transparent 70%); pointer-events: none; }
+  .flame { font-size: 48px; margin-bottom: 24px; animation: flicker 3s ease-in-out infinite; }
+  @keyframes flicker { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.85; transform: scale(1.05); } }
+  .intro-title { font-family: 'Playfair Display', serif; font-size: clamp(2rem, 8vw, 3.5rem); font-weight: 700; line-height: 1.1; margin-bottom: 16px; background: linear-gradient(135deg, var(--cream) 0%, var(--gold) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .intro-sub { font-size: 1.05rem; color: var(--mist); max-width: 480px; margin-bottom: 48px; }
+  .btn-start { background: var(--ember); color: white; border: none; padding: 16px 40px; font-family: 'Inter', sans-serif; font-size: 1rem; font-weight: 500; letter-spacing: 0.05em; border-radius: 2px; cursor: pointer; transition: background 0.2s, transform 0.1s; }
+  .btn-start:hover { background: #d4723d; transform: translateY(-1px); }
+  .privacy-note { margin-top: 24px; font-size: 0.8rem; color: var(--mist); opacity: 0.7; }
+  #journey { display: none; min-height: 100vh; }
+  .progress-bar { position: fixed; top: 0; left: 0; height: 3px; background: linear-gradient(90deg, var(--ember), var(--gold)); transition: width 0.5s ease; z-index: 100; }
+  .step-container { display: none; min-height: 100vh; padding: 80px 24px 60px; max-width: 640px; margin: 0 auto; flex-direction: column; justify-content: center; }
+  .step-container.active { display: flex; }
+  .step-label { font-size: 0.72rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--ember); margin-bottom: 20px; font-weight: 500; }
+  .step-question { font-family: 'Playfair Display', serif; font-size: clamp(1.5rem, 5vw, 2rem); font-weight: 400; line-height: 1.3; margin-bottom: 12px; color: var(--cream); }
+  .step-prompt { font-size: 0.92rem; color: var(--mist); margin-bottom: 32px; }
+  textarea { width: 100%; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 2px; color: var(--cream); font-family: 'Inter', sans-serif; font-size: 0.95rem; font-weight: 300; line-height: 1.8; padding: 20px; resize: none; min-height: 160px; outline: none; transition: border-color 0.2s; }
+  textarea:focus { border-color: rgba(196,98,45,0.5); }
+  textarea::placeholder { color: rgba(176,168,152,0.5); }
+  .btn-next { margin-top: 20px; background: transparent; border: 1px solid var(--ember); color: var(--ember); padding: 14px 32px; font-family: 'Inter', sans-serif; font-size: 0.9rem; font-weight: 500; letter-spacing: 0.05em; border-radius: 2px; cursor: pointer; transition: all 0.2s; align-self: flex-start; }
+  .btn-next:hover { background: var(--ember); color: white; }
+  .btn-next:disabled { opacity: 0.3; cursor: not-allowed; }
+  #generating { display: none; min-height: 100vh; align-items: center; justify-content: center; flex-direction: column; text-align: center; padding: 40px 24px; }
+  .gen-icon { font-size: 40px; margin-bottom: 24px; animation: pulse 2s ease-in-out infinite; }
+  @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.1); opacity: 0.8; } }
+  .gen-title { font-family: 'Playfair Display', serif; font-size: 1.5rem; margin-bottom: 12px; color: var(--cream); }
+  .gen-sub { color: var(--mist); font-size: 0.9rem; }
+  #result { display: none; min-height: 100vh; padding: 60px 24px; }
+  .result-inner { max-width: 640px; margin: 0 auto; }
+  .result-badge { display: inline-block; background: rgba(196,98,45,0.15); border: 1px solid rgba(196,98,45,0.3); color: var(--ember); font-size: 0.72rem; letter-spacing: 0.15em; text-transform: uppercase; padding: 6px 14px; border-radius: 2px; margin-bottom: 28px; }
+  .result-title { font-family: 'Playfair Display', serif; font-size: clamp(1.6rem, 5vw, 2.2rem); margin-bottom: 32px; color: var(--cream); line-height: 1.2; }
+  .result-card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-left: 3px solid var(--ember); border-radius: 2px; padding: 32px; margin-bottom: 32px; line-height: 1.9; font-size: 0.95rem; color: var(--cream); white-space: pre-wrap; }
+  .result-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+  .btn-copy, .btn-restart { padding: 13px 28px; font-family: 'Inter', sans-serif; font-size: 0.88rem; font-weight: 500; border-radius: 2px; cursor: pointer; transition: all 0.2s; letter-spacing: 0.04em; }
+  .btn-copy { background: var(--leaf); color: white; border: none; }
+  .btn-copy:hover { background: #5a8c69; }
+  .btn-restart { background: transparent; border: 1px solid rgba(255,255,255,0.2); color: var(--mist); }
+  .btn-restart:hover { border-color: var(--cream); color: var(--cream); }
+  .affirmation { margin-top: 40px; padding: 24px; background: rgba(74,124,89,0.1); border: 1px solid rgba(74,124,89,0.2); border-radius: 2px; font-size: 0.88rem; color: var(--mist); line-height: 1.8; text-align: center; }
+  .error-banner { display: none; background: rgba(224,112,112,0.1); border: 1px solid rgba(224,112,112,0.3); color: #e07070; padding: 16px 20px; border-radius: 2px; margin-top: 16px; font-size: 0.88rem; line-height: 1.6; }
+</style>
+</head>
+<body>
+<div id="intro">
+  <div class="flame">🔥</div>
+  <h1 class="intro-title">Breaking the Cycle</h1>
+  <p class="intro-sub">A safe space to look at where you came from, who you're becoming, and what you're building for your kids.</p>
+  <button class="btn-start" onclick="startJourney()">Begin Your Story</button>
+  <p class="privacy-note">Your answers stay with you. Nothing is saved or shared.</p>
+</div>
+<div id="journey">
+  <div class="progress-bar" id="progressBar"></div>
+  <div class="step-container active" id="step1">
+    <div class="step-label">Where You Are</div>
+    <h2 class="step-question">How are you doing right now — honestly?</h2>
+    <p class="step-prompt">No right answer. Just check in with yourself. What's heavy? What's hopeful?</p>
+    <textarea id="ans1" placeholder="Just say what's real..." oninput="checkInput(1)"></textarea>
+    <button class="btn-next" id="btn1" onclick="nextStep(1)" disabled>Continue →</button>
+  </div>
+  <div class="step-container" id="step2">
+    <div class="step-label">What You Carried In</div>
+    <h2 class="step-question">What did the people who raised you teach you — on purpose or by accident?</h2>
+    <p class="step-prompt">The patterns, the survival skills, the wounds. What did you inherit that you didn't choose?</p>
+    <textarea id="ans2" placeholder="What was life like growing up? What did you learn to do to survive?" oninput="checkInput(2)"></textarea>
+    <button class="btn-next" id="btn2" onclick="nextStep(2)" disabled>Continue →</button>
+  </div>
+  <div class="step-container" id="step3">
+    <div class="step-label">The Turning Point</div>
+    <h2 class="step-question">When did something shift inside you?</h2>
+    <p class="step-prompt">The moment that made you stop and say "not anymore."</p>
+    <textarea id="ans3" placeholder="What made you decide to do things differently?" oninput="checkInput(3)"></textarea>
+    <button class="btn-next" id="btn3" onclick="nextStep(3)" disabled>Continue →</button>
+  </div>
+  <div class="step-container" id="step4">
+    <div class="step-label">Who You're Becoming</div>
+    <h2 class="step-question">Who is the person you are choosing to be now?</h2>
+    <p class="step-prompt">Not who you were. Who are you becoming — as a parent, as a person?</p>
+    <textarea id="ans4" placeholder="Describe the version of you that your kids will know..." oninput="checkInput(4)"></textarea>
+    <button class="btn-next" id="btn4" onclick="nextStep(4)" disabled>Continue →</button>
+  </div>
+  <div class="step-container" id="step5">
+    <div class="step-label">For Your Kids</div>
+    <h2 class="step-question">What do you most want your kids to know?</h2>
+    <p class="step-prompt">About life, about themselves, about you. What truth do you want them to carry?</p>
+    <textarea id="ans5" placeholder="What do you want to pass down instead..." oninput="checkInput(5)"></textarea>
+    <button class="btn-next" id="btn5" onclick="generateLetter()" disabled>Create My Letter →</button>
+    <div class="error-banner" id="errorBanner"></div>
+  </div>
+</div>
+<div id="generating">
+  <div class="gen-icon">✨</div>
+  <h2 class="gen-title">Writing your letter...</h2>
+  <p class="gen-sub">Turning your story into something you can hold onto.</p>
+</div>
+<div id="result">
+  <div class="result-inner">
+    <div class="result-badge">Your Letter</div>
+    <h2 class="result-title">A Letter to My Kids</h2>
+    <div class="result-card" id="letterContent"></div>
+    <div class="result-actions">
+      <button class="btn-copy" onclick="copyLetter()">Copy My Letter</button>
+      <button class="btn-restart" onclick="restart()">Start Over</button>
+    </div>
+    <div class="affirmation">
+      🌱 You showed up today. That matters more than you know.<br>
+      The cycle breaks with you.
+    </div>
+  </div>
+</div>
+<script>
+  let currentStep = 1;
+  const totalSteps = 5;
+  let fullLetterText = '';
+  function startJourney() {
+    document.getElementById('intro').style.display = 'none';
+    document.getElementById('journey').style.display = 'block';
+    updateProgress();
+  }
+  function updateProgress() {
+    const pct = ((currentStep - 1) / totalSteps) * 100;
+    document.getElementById('progressBar').style.width = pct + '%';
+  }
+  function checkInput(step) {
+    const val = document.getElementById('ans' + step).value.trim();
+    document.getElementById('btn' + step).disabled = val.length < 3;
+  }
+  function nextStep(step) {
+    document.getElementById('step' + step).classList.remove('active');
+    currentStep = step + 1;
+    document.getElementById('step' + currentStep).classList.add('active');
+    updateProgress();
+    window.scrollTo(0, 0);
+  }
+  async function generateLetter() {
+    const answers = {
+      current:   document.getElementById('ans1').value.trim(),
+      inherited: document.getElementById('ans2').value.trim(),
+      turning:   document.getElementById('ans3').value.trim(),
+      becoming:  document.getElementById('ans4').value.trim(),
+      forKids:   document.getElementById('ans5').value.trim()
+    };
+    document.getElementById('journey').style.display = 'none';
+    document.getElementById('generating').style.display = 'flex';
+    try {
+      const response = await fetch('/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ answers })
+      });
+      if (!response.ok) throw new Error('API error: ' + response.status);
+      const data = await response.json();
+      fullLetterText = data.letter || 'Something went wrong. Please try again.';
+      document.getElementById('generating').style.display = 'none';
+      document.getElementById('result').style.display = 'block';
+      document.getElementById('letterContent').textContent = fullLetterText;
+      window.scrollTo(0, 0);
+    } catch (err) {
+      console.error(err);
+      document.getElementById('generating').style.display = 'none';
+      document.getElementById('journey').style.display = 'block';
+      document.getElementById('step5').classList.add('active');
+      const banner = document.getElementById('errorBanner');
+      banner.style.display = 'block';
+      banner.textContent = 'Something went wrong. Please try again.';
+    }
+  }
+  function copyLetter() {
+    navigator.clipboard.writeText(fullLetterText).then(() => {
+      const btn = document.querySelector('.btn-copy');
+      btn.textContent = 'Copied ✓';
+      setTimeout(() => btn.textContent = 'Copy My Letter', 2500);
+    });
+  }
+  function restart() {
+    document.getElementById('result').style.display = 'none';
+    document.getElementById('intro').style.display = 'flex';
+    document.querySelectorAll('textarea').forEach(t => t.value = '');
+    document.querySelectorAll('.btn-next').forEach(b => b.disabled = true);
+    document.querySelectorAll('.step-container').forEach(s => s.classList.remove('active'));
+    document.getElementById('step1').classList.add('active');
+    document.getElementById('errorBanner').style.display = 'none';
+    document.getElementById('letterContent').textContent = '';
+    fullLetterText = '';
+    currentStep = 1;
+    updateProgress();
+    window.scrollTo(0, 0);
+  }
+</script>
+</body>
+</html>
